@@ -12,6 +12,9 @@ struct cord
     int y;
 };
 
+class MySnakebot;
+class OppSnakebot;
+
 class Grid {
 public:
   int width;
@@ -52,12 +55,6 @@ public:
     width = w;
     height = h;
     grid2d = new char*[height];
-    for (int i = 0; i < height; i++) {
-      grid2d[i] = new char[width];
-      for (int j = 0; j < width; j++) {
-        grid2d[i][j] = '.';
-      }
-    }
   }
 
   void refresh_grid()
@@ -68,6 +65,32 @@ public:
           grid2d[i][j] = '.';
       }
     }
+  }
+
+  void print_grid()
+  {
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        cerr << grid2d[i][j];
+      }
+      cerr << endl;
+    }
+  }
+
+  void insertMySnakebot(MySnakebot& snakebot)
+  {
+    for (cord c : snakebot.chain)
+    {
+      grid2d[c.y][c.x] = snakebot.id + '0';
+    } 
+  }
+
+  void insertOppSnakebot(OppSnakebot& snakebot)
+  {
+    for (cord c : snakebot.chain)
+    {
+      grid2d[c.y][c.x] = snakebot.id + '0';
+    } 
   }
 };
 
@@ -210,6 +233,7 @@ int main() {
         {
             my_snakebots_old[i].body_to_chain(body);
             my_snakebots.push_back(my_snakebots_old[i]);
+            grid.insertMySnakebot(my_snakebots_old[i]);
             is_found = true;
             break;
         }
@@ -222,6 +246,7 @@ int main() {
             {
                 opp_snakebots_old[i].body_to_chain(body);
                 opp_snakebots.push_back(opp_snakebots_old[i]);
+                grid.insertOppSnakebot(opp_snakebots_old[i]);
                 break;
             }
           }
@@ -230,7 +255,7 @@ int main() {
 
     // Write an action using cout. DON'T FORGET THE "<< endl"
     // To debug: cerr << "Debug messages..." << endl;
-
+    grid.print_grid();
     for (int i = 0; i < snakebots_per_player; i++) {
       my_snakebots[i].move();
       if (i < snakebots_per_player - 1)
@@ -240,5 +265,6 @@ int main() {
     // cout << "wait" << endl;
     my_snakebots_old = my_snakebots;
     my_snakebots.clear();
+    grid.refresh_grid();
   }
 }
