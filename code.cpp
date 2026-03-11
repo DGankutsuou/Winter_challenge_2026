@@ -15,6 +15,76 @@ struct cord
 class MySnakebot;
 class OppSnakebot;
 
+class MySnakebot {
+public:
+  MySnakebot(int i, int d) : id(i), dr(d) {}
+  int id;
+  int dr;
+  vector <cord> chain;
+
+  void move(const string &dir) {
+    cout << id << " " << dir;
+    dr = dir[0];
+  }
+
+  void move() {
+    string dir[4] = {"UP", "DOWN", "RIGHT", "LEFT"};
+    int i = rand() % 4;
+    cout << id << " " << dir[i];
+    dr = dir[i][0];
+  }
+
+  void body_to_chain(string& body)
+  {
+    chain.clear();
+    size_t pos = 0;
+    while ((pos = body.find(':')) != string::npos) {
+        string token = body.substr(0, pos);
+        size_t comma_pos = token.find(',');
+        cord c;
+        c.x = stoi(token.substr(0, comma_pos));
+        c.y = stoi(token.substr(comma_pos + 1));
+        chain.push_back(c);
+        body.erase(0, pos + 1);
+    }
+    // last token
+    size_t comma_pos = body.find(',');
+    cord c;
+    c.x = stoi(body.substr(0, comma_pos));
+    c.y = stoi(body.substr(comma_pos + 1));
+    chain.push_back(c);
+  }
+};
+
+class OppSnakebot {
+public:
+  OppSnakebot(int i, int d) : id(i), dr(d) {}
+  int id;
+  int dr;
+  vector <cord> chain;
+
+  void body_to_chain(string& body)
+  {
+    chain.clear();
+    size_t pos = 0;
+    while ((pos = body.find(':')) != string::npos) {
+        string token = body.substr(0, pos);
+        size_t comma_pos = token.find(',');
+        cord c;
+        c.x = stoi(token.substr(0, comma_pos));
+        c.y = stoi(token.substr(comma_pos + 1));
+        chain.push_back(c);
+        body.erase(0, pos + 1);
+    }
+    // last token
+    size_t comma_pos = body.find(',');
+    cord c;
+    c.x = stoi(body.substr(0, comma_pos));
+    c.y = stoi(body.substr(comma_pos + 1));
+    chain.push_back(c);
+  }
+};
+
 class Grid {
 public:
   int width;
@@ -91,76 +161,6 @@ public:
     {
       grid2d[c.y][c.x] = snakebot.id + '0';
     } 
-  }
-};
-
-class MySnakebot {
-public:
-  MySnakebot(int i, int d) : id(i), dr(d) {}
-  int id;
-  int dr;
-  vector <cord> chain;
-
-  void move(const string &dir) {
-    cout << id << " " << dir;
-    dr = dir[0];
-  }
-
-  void move() {
-    string dir[4] = {"UP", "DOWN", "RIGHT", "LEFT"};
-    int i = rand() % 4;
-    cout << id << " " << dir[i];
-    dr = dir[i][0];
-  }
-
-  void body_to_chain(string& body)
-  {
-    chain.clear();
-    size_t pos = 0;
-    while ((pos = body.find(':')) != string::npos) {
-        string token = body.substr(0, pos);
-        size_t comma_pos = token.find(',');
-        cord c;
-        c.x = stoi(token.substr(0, comma_pos));
-        c.y = stoi(token.substr(comma_pos + 1));
-        chain.push_back(c);
-        body.erase(0, pos + 1);
-    }
-    // last token
-    size_t comma_pos = body.find(',');
-    cord c;
-    c.x = stoi(body.substr(0, comma_pos));
-    c.y = stoi(body.substr(comma_pos + 1));
-    chain.push_back(c);
-  }
-};
-
-class OppSnakebot {
-public:
-  OppSnakebot(int i, int d) : id(i), dr(d) {}
-  int id;
-  int dr;
-  vector <cord> chain;
-
-  void body_to_chain(string& body)
-  {
-    chain.clear();
-    size_t pos = 0;
-    while ((pos = body.find(':')) != string::npos) {
-        string token = body.substr(0, pos);
-        size_t comma_pos = token.find(',');
-        cord c;
-        c.x = stoi(token.substr(0, comma_pos));
-        c.y = stoi(token.substr(comma_pos + 1));
-        chain.push_back(c);
-        body.erase(0, pos + 1);
-    }
-    // last token
-    size_t comma_pos = body.find(',');
-    cord c;
-    c.x = stoi(body.substr(0, comma_pos));
-    c.y = stoi(body.substr(comma_pos + 1));
-    chain.push_back(c);
   }
 };
 
