@@ -35,8 +35,20 @@ public:
   }
 };
 
+class OppSnakebot {
+public:
+  OppSnakebot(int i, int d) : id(i), dr(d) {}
+  int id;
+  int dr;
+  string body;
+  vector <cord> chain;
+};
+
 vector<MySnakebot> my_snakebots;
 vector<MySnakebot> my_snakebots_old;
+
+vector<OppSnakebot> opp_snakebots;
+vector<OppSnakebot> opp_snakebots_old;
 
 int main() {
   int my_id;
