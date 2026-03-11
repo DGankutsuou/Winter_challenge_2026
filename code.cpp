@@ -12,14 +12,70 @@ struct cord
     int y;
 };
 
-string *grid2d;
+class Grid {
+public:
+  int width;
+  int height;
+  char **grid2d;
+  Grid() : width(0), height(0), grid2d(nullptr) {}
+  Grid(int w, int h) : width(w), height(h)
+  {
+    grid2d = new char*[height];
+    for (int i = 0; i < height; i++) {
+      grid2d[i] = new char[width];
+      for (int j = 0; j < width; j++) {
+        grid2d[i][j] = '.';
+      }
+    }
+  }
+  ~Grid() {
+    if (grid2d != nullptr)
+    {
+      for (int i = 0; i < height; i++) {
+        if (grid2d[i] != nullptr)
+          delete[] grid2d[i];
+      }
+      delete[] grid2d;
+    }
+  }
+
+  void recreate_grid(int w, int h)
+  {
+    if (grid2d != nullptr)
+    {
+      for (int i = 0; i < height; i++) {
+        if (grid2d[i] != nullptr)
+          delete[] grid2d[i];
+      }
+      delete[] grid2d;
+    }
+    width = w;
+    height = h;
+    grid2d = new char*[height];
+    for (int i = 0; i < height; i++) {
+      grid2d[i] = new char[width];
+      for (int j = 0; j < width; j++) {
+        grid2d[i][j] = '.';
+      }
+    }
+  }
+
+  void refresh_grid()
+  {
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        if (grid2d[i][j] != '#')
+          grid2d[i][j] = '.';
+      }
+    }
+  }
+};
 
 class MySnakebot {
 public:
   MySnakebot(int i, int d) : id(i), dr(d) {}
   int id;
   int dr;
-  string body;
   vector <cord> chain;
 
   void move(const string &dir) {
@@ -33,6 +89,27 @@ public:
     cout << id << " " << dir[i];
     dr = dir[i][0];
   }
+
+  void body_to_chain(string& body)
+  {
+    chain.clear();
+    size_t pos = 0;
+    while ((pos = body.find(':')) != string::npos) {
+        string token = body.substr(0, pos);
+        size_t comma_pos = token.find(',');
+        cord c;
+        c.x = stoi(token.substr(0, comma_pos));
+        c.y = stoi(token.substr(comma_pos + 1));
+        chain.push_back(c);
+        body.erase(0, pos + 1);
+    }
+    // last token
+    size_t comma_pos = body.find(',');
+    cord c;
+    c.x = stoi(body.substr(0, comma_pos));
+    c.y = stoi(body.substr(comma_pos + 1));
+    chain.push_back(c);
+  }
 };
 
 class OppSnakebot {
@@ -40,8 +117,28 @@ public:
   OppSnakebot(int i, int d) : id(i), dr(d) {}
   int id;
   int dr;
-  string body;
   vector <cord> chain;
+
+  void body_to_chain(string& body)
+  {
+    chain.clear();
+    size_t pos = 0;
+    while ((pos = body.find(':')) != string::npos) {
+        string token = body.substr(0, pos);
+        size_t comma_pos = token.find(',');
+        cord c;
+        c.x = stoi(token.substr(0, comma_pos));
+        c.y = stoi(token.substr(comma_pos + 1));
+        chain.push_back(c);
+        body.erase(0, pos + 1);
+    }
+    // last token
+    size_t comma_pos = body.find(',');
+    cord c;
+    c.x = stoi(body.substr(0, comma_pos));
+    c.y = stoi(body.substr(comma_pos + 1));
+    chain.push_back(c);
+  }
 };
 
 vector<MySnakebot> my_snakebots;
@@ -49,6 +146,8 @@ vector<MySnakebot> my_snakebots_old;
 
 vector<OppSnakebot> opp_snakebots;
 vector<OppSnakebot> opp_snakebots_old;
+
+Grid grid;
 
 int main() {
   int my_id;
@@ -60,11 +159,14 @@ int main() {
   int height;
   cin >> height;
   cin.ignore();
-  grid2d = new string[height];
+  grid.recreate_grid(width, height);
   for (int i = 0; i < height; i++) {
     string row;
     getline(cin, row);
-    grid2d[i] = row;
+    cerr << row << endl;
+    for (int j = 0; j < width; j++) {
+      grid.grid2d[i][j] = row[j];
+    }
   }
   int snakebots_per_player;
   cin >> snakebots_per_player;
@@ -79,6 +181,7 @@ int main() {
     int opp_snakebot_id;
     cin >> opp_snakebot_id;
     cin.ignore();
+    opp_snakebots_old.push_back(OppSnakebot(opp_snakebot_id, 'U'));
   }
 
   // game loop
@@ -98,15 +201,30 @@ int main() {
     for (int i = 0; i < snakebot_count; i++) {
       int snakebot_id;
       string body;
+      bool is_found = false;
       cin >> snakebot_id >> body;
       cin.ignore();
       for (int i = 0; i < my_snakebots_old.size(); i++)
       {
         if (my_snakebots_old[i].id == snakebot_id)
         {
-            my_snakebots_old[i].body = body;
+            my_snakebots_old[i].body_to_chain(body);
             my_snakebots.push_back(my_snakebots_old[i]);
+            is_found = true;
+            break;
         }
+      }
+      if (!is_found)
+      {
+          for (int i = 0; i < opp_snakebots_old.size(); i++)
+          {
+            if (opp_snakebots_old[i].id == snakebot_id)
+            {
+                opp_snakebots_old[i].body_to_chain(body);
+                opp_snakebots.push_back(opp_snakebots_old[i]);
+                break;
+            }
+          }
       }
     }
 
@@ -123,5 +241,4 @@ int main() {
     my_snakebots_old = my_snakebots;
     my_snakebots.clear();
   }
-  delete[] grid2d;
 }
