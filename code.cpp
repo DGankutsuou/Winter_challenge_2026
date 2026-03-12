@@ -27,7 +27,7 @@ public:
     dr = dir[0];
   }
 
-  void move() {
+  void move(char** grid) {
     string dir[4] = {"UP", "DOWN", "RIGHT", "LEFT"};
     int i = rand() % 4;
     cout << id << " " << dir[i];
@@ -125,6 +125,9 @@ public:
     width = w;
     height = h;
     grid2d = new char*[height];
+    for (int i = 0; i < height; i++) {
+      grid2d[i] = new char[width];
+    }
   }
 
   void refresh_grid()
@@ -151,7 +154,7 @@ public:
   {
     for (cord c : snakebot.chain)
     {
-      grid2d[c.y][c.x] = snakebot.id + '0';
+      grid2d[c.y][c.x] = snakebot.id + 'A';
     } 
   }
 
@@ -159,10 +162,11 @@ public:
   {
     for (cord c : snakebot.chain)
     {
-      grid2d[c.y][c.x] = snakebot.id + '0';
+      grid2d[c.y][c.x] = snakebot.id + 'A';
     } 
   }
 };
+
 
 vector<MySnakebot> my_snakebots;
 vector<MySnakebot> my_snakebots_old;
@@ -186,7 +190,6 @@ int main() {
   for (int i = 0; i < height; i++) {
     string row;
     getline(cin, row);
-    cerr << row << endl;
     for (int j = 0; j < width; j++) {
       grid.grid2d[i][j] = row[j];
     }
@@ -217,6 +220,7 @@ int main() {
       int y;
       cin >> x >> y;
       cin.ignore();
+      grid.grid2d[y][x] = 'p';
     }
     int snakebot_count;
     cin >> snakebot_count;
@@ -256,9 +260,9 @@ int main() {
     // Write an action using cout. DON'T FORGET THE "<< endl"
     // To debug: cerr << "Debug messages..." << endl;
     grid.print_grid();
-    for (int i = 0; i < snakebots_per_player; i++) {
+    for (int i = 0; i < my_snakebots.size(); i++) {
       my_snakebots[i].move();
-      if (i < snakebots_per_player - 1)
+      if (i < my_snakebots.size() - 1)
         cout << ";";
     }
     cout << endl;
