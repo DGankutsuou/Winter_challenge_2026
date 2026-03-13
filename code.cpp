@@ -20,10 +20,11 @@
 
 using namespace std;
 
-struct cord
+struct s_cord
 {
   int x;
   int y;
+  bool operator==(const s_cord& cord) {return x==cord.x && y==cord.y;}
 };
 
 enum e_direction
@@ -49,7 +50,7 @@ public:
   MySnakebot(int i, e_direction d) : id(i), edr(d) {}
   int id;
   enum e_direction edr;
-  vector<cord> chain;
+  vector<s_cord> chain;
 
   void move(e_direction dir)
   {
@@ -92,7 +93,7 @@ public:
     {
       string token = body.substr(0, pos);
       size_t comma_pos = token.find(',');
-      cord c;
+      s_cord c;
       c.x = stoi(token.substr(0, comma_pos));
       c.y = stoi(token.substr(comma_pos + 1));
       chain.push_back(c);
@@ -100,7 +101,7 @@ public:
     }
     // last token
     size_t comma_pos = body.find(',');
-    cord c;
+    s_cord c;
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain.push_back(c);
@@ -123,7 +124,7 @@ public:
   OppSnakebot(int i, int d) : id(i), dr(d) {}
   int id;
   int dr;
-  vector<cord> chain;
+  vector<s_cord> chain;
 
   void body_to_chain(string &body)
   {
@@ -133,7 +134,7 @@ public:
     {
       string token = body.substr(0, pos);
       size_t comma_pos = token.find(',');
-      cord c;
+      s_cord c;
       c.x = stoi(token.substr(0, comma_pos));
       c.y = stoi(token.substr(comma_pos + 1));
       chain.push_back(c);
@@ -141,7 +142,7 @@ public:
     }
     // last token
     size_t comma_pos = body.find(',');
-    cord c;
+    s_cord c;
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain.push_back(c);
@@ -236,7 +237,7 @@ public:
 
   void insertMySnakebot(MySnakebot &snakebot)
   {
-    for (cord &c : snakebot.chain)
+    for (s_cord &c : snakebot.chain)
     {
       grid2d[c.y][c.x] = snakebot.id + 'A';
     }
@@ -244,7 +245,7 @@ public:
 
   void insertOppSnakebot(OppSnakebot &snakebot)
   {
-    for (cord &c : snakebot.chain)
+    for (s_cord &c : snakebot.chain)
     {
       grid2d[c.y][c.x] = snakebot.id + 'A';
     }
