@@ -36,8 +36,62 @@ struct s_cord {
 
 enum e_direction { UP, DOWN, RIGHT, LEFT };
 
+string direction_to_string(e_direction dir) {
+  switch (dir) {
+  case UP:
+    return "UP";
+  case DOWN:
+    return "DOWN";
+  case RIGHT:
+    return "RIGHT";
+  case LEFT:
+    return "LEFT";
+  default:
+    return "";
+  }
+}
+
 struct s_direction {
+  s_direction() : dir(UP) {}
+  s_direction(e_direction d) : dir(d) {}
   e_direction dir;
+
+  bool operator==(const s_direction &sdr) { return dir == sdr.dir; }
+  bool operator!=(const s_direction &sdr) {
+    if (dir == UP && sdr.dir == DOWN)
+      return true;
+    if (dir == DOWN && sdr.dir == UP)
+      return true;
+    if (dir == RIGHT && sdr.dir == LEFT)
+      return true;
+    if (dir == LEFT && sdr.dir == RIGHT)
+      return true;
+    return false;
+  }
+
+  static bool are_opposite(const s_direction &sdr1, const s_direction &sdr2) {
+    if (sdr1.dir == UP && sdr2.dir == DOWN)
+      return true;
+    if (sdr1.dir == DOWN && sdr2.dir == UP)
+      return true;
+    if (sdr1.dir == RIGHT && sdr2.dir == LEFT)
+      return true;
+    if (sdr1.dir == LEFT && sdr2.dir == RIGHT)
+      return true;
+    return false;
+  }
+
+  static bool are_opposite(const e_direction &dir1, const e_direction &dir2) {
+    if (dir1 == UP && dir2 == DOWN)
+      return true;
+    if (dir1 == DOWN && dir2 == UP)
+      return true;
+    if (dir1 == RIGHT && dir2 == LEFT)
+      return true;
+    if (dir1 == LEFT && dir2 == RIGHT)
+      return true;
+    return false;
+  }
 };
 
 struct s_move {
@@ -50,13 +104,12 @@ struct OppSnakebot;
 
 struct MySnakebot {
 public:
-  MySnakebot() : id(-1), edr(UP) {}
-  MySnakebot(int i, e_direction d) : id(i), edr(d) {}
+  MySnakebot() : id(-1), sdr(UP) {}
+  MySnakebot(int i, e_direction d) : id(i), sdr(d) {}
   int id;
   int length = 0;
-  e_direction edr;
   s_direction sdr;
-  int is_alive = 1;
+  int is_alive = 0;
   s_cord chain[MAX_CHAIN_LENGTH];
   s_direction possible_moves[4];
   int possible_moves_count = 0;
@@ -64,32 +117,26 @@ public:
   void move(e_direction dir) {
     string directions[4] = {"UP", "DOWN", "RIGHT", "LEFT"};
     cout << id << " " << directions[dir];
-    if (dir == UP && edr == DOWN)
+    if (dir == UP && sdr.dir == DOWN)
       return;
-    if (dir == DOWN && edr == UP)
+    if (dir == DOWN && sdr.dir == UP)
       return;
-    if (dir == RIGHT && edr == LEFT)
+    if (dir == RIGHT && sdr.dir == LEFT)
       return;
-    if (dir == LEFT && edr == RIGHT)
+    if (dir == LEFT && sdr.dir == RIGHT)
       return;
-    edr = dir;
+    sdr.dir = dir;
   }
 
-  void move(char **grid) {
-    string dir[4] = {"UP", "DOWN", "RIGHT", "LEFT"};
-    int i = rand() % 4;
-    cout << id << " " << dir[i];
-    if (edr == i)
+  void move() {
+    if (possible_moves_count == 0)
+    {
+      cout << id << " " << direction_to_string(sdr.dir);
       return;
-    if (i == UP && edr == DOWN)
-      return;
-    if (i == DOWN && edr == UP)
-      return;
-    if (i == RIGHT && edr == LEFT)
-      return;
-    if (i == LEFT && edr == RIGHT)
-      return;
-    edr = static_cast<e_direction>(i);
+    }
+    int i = rand() % possible_moves_count;
+    cout << id << " " << direction_to_string(possible_moves[i].dir);
+    sdr.dir = possible_moves[i].dir;
   }
 
   void body_to_chain(string &body) {
@@ -110,6 +157,21 @@ public:
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain[length++] = c;
+  }
+
+  void generate_possible_moves(char **grid, int width, int height) {
+    possible_moves_count = 0;
+    int dx[4] = {0, 0, 1, -1};
+    int dy[4] = {-1, 1, 0, 0};
+    for (int i = 0; i < 4; i++) {
+      int new_x = chain[0].x + dx[i];
+      int new_y = chain[0].y + dy[i];
+      if (new_x >= 0 && new_x < width && new_y >= 0 &&
+          (new_y < height && grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
+        !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
+        possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
+      }
+    }
   }
 };
 
@@ -121,7 +183,7 @@ public:
   int length = 0;
   e_direction edr;
   s_direction sdr;
-  int is_alive = 1;
+  int is_alive = 0;
   s_cord chain[MAX_CHAIN_LENGTH];
   s_direction possible_moves[4];
   int possible_moves_count = 0;
@@ -144,6 +206,21 @@ public:
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain[length++] = c;
+  }
+
+  void generate_possible_moves(char **grid, int width, int height) {
+    possible_moves_count = 0;
+    int dx[4] = {0, 0, 1, -1};
+    int dy[4] = {-1, 1, 0, 0};
+    for (int i = 0; i < 4; i++) {
+      int new_x = chain[0].x + dx[i];
+      int new_y = chain[0].y + dy[i];
+      if (new_x >= 0 && new_x < width && new_y >= 0 &&
+          (new_y < height && grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
+        !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
+        possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
+      }
+    }
   }
 };
 
@@ -215,7 +292,7 @@ public:
 
   void insertOppSnakebot(OppSnakebot &snakebot) {
     for (int i = 0; i < snakebot.length; i++) {
-      grid2d[snakebot.chain[i].y][snakebot.chain[i].x] = snakebot.id + 'A';
+      grid2d[snakebot.chain[i].y][snakebot.chain[i].x] = snakebot.id + 'a';
     }
   }
 };
@@ -224,7 +301,7 @@ struct SMySnakebots {
   MySnakebot arr[MAX_SNAKEBOTS];
 
   MySnakebot *getSnakebotById(int id) {
-    for (int i = 0; i < my_snakebot_count; i++) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
       if (arr[i].id == id)
         return &(arr[i]);
     }
@@ -232,7 +309,7 @@ struct SMySnakebots {
   }
 
   void killAllSnakebots() {
-    for (int i = 0; i < my_snakebot_count; i++) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
       arr[i].is_alive = 0;
     }
   }
@@ -242,7 +319,7 @@ struct SOppSnakebots {
   OppSnakebot arr[MAX_SNAKEBOTS];
 
   OppSnakebot *getSnakebotById(int id) {
-    for (int i = 0; i < opp_snakebot_count; i++) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
       if (arr[i].id == id)
         return &(arr[i]);
     }
@@ -250,7 +327,7 @@ struct SOppSnakebots {
   }
 
   void killAllSnakebots() {
-    for (int i = 0; i < opp_snakebot_count; i++) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
       arr[i].is_alive = 0;
     }
   }
@@ -263,12 +340,14 @@ Grid grid;
 
 // this function will generate all possible combinations of moves for my
 // snakebots and return them as a vector of vector of s_move
-s_move **generateAllMyMoves(SMySnakebots &snakebots) {
-  s_move **all_moves = NULL;
-  s_move move;
-
-  return all_moves;
-}
+struct game_state
+{
+  int total_power_sources;
+  int my_snakebot_count;
+  int opp_snakebot_count;
+  int my_lengths_total;
+  int opp_lengths_total;
+};
 
 int main() {
   int my_id;
@@ -316,7 +395,7 @@ int main() {
       int y;
       cin >> x >> y;
       cin.ignore();
-      grid.grid2d[y][x] = 'p';
+      grid.grid2d[y][x] = '@';
     }
     int snakebot_count;
     cin >> snakebot_count;
@@ -331,12 +410,14 @@ int main() {
         my_snakebot->body_to_chain(body);
         grid.insertMySnakebot(*my_snakebot);
         my_snakebot->is_alive = 1;
+        my_snakebot_count++;
       } else {
         OppSnakebot *opp_snakebot = opp_snakebots.getSnakebotById(snakebot_id);
         if (opp_snakebot != nullptr) {
           opp_snakebot->body_to_chain(body);
           grid.insertOppSnakebot(*opp_snakebot);
           opp_snakebot->is_alive = 1;
+          opp_snakebot_count++;
         }
       }
     }
@@ -346,7 +427,8 @@ int main() {
     grid.print_grid();
     for (int i = 0; i < MAX_SNAKEBOTS; i++) {
       if (my_snakebots.arr[i].is_alive) {
-        my_snakebots.arr[i].move(grid.grid2d);
+        my_snakebots.arr[i].generate_possible_moves(grid.grid2d, grid.width, grid.height);
+        my_snakebots.arr[i].move();
 
         if (i < MAX_SNAKEBOTS - 1)
           cout << ";";
@@ -354,10 +436,10 @@ int main() {
     }
     cout << endl;
     // cout << "wait" << endl;
-    my_snakebot_count = 0;
-    opp_snakebot_count = 0;
     my_snakebots.killAllSnakebots();
     opp_snakebots.killAllSnakebots();
+    my_snakebot_count = 0;
+    opp_snakebot_count = 0;
     grid.refresh_grid();
   }
 }
