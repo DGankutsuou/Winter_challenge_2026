@@ -226,6 +226,7 @@ public:
 
 struct Grid {
 public:
+  int turn = 0;
   int width;
   int height;
   char **grid2d;
@@ -387,6 +388,7 @@ int main() {
 
   // game loop
   while (1) {
+    grid.turn++;
     int power_source_count;
     cin >> power_source_count;
     cin.ignore();
