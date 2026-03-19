@@ -189,7 +189,7 @@ public:
     chain[length++] = c;
   }
 
-  void generate_possible_moves(char **grid, int width, int height)
+  void generate_possible_moves(char grid[50][50], int width, int height)
   {
     possible_moves_count = 0;
     int dx[4] = {0, 0, 1, -1};
@@ -269,7 +269,11 @@ public:
   int turn = 0;
   int width;
   int height;
-  char **grid2d;
+  struct s_grid2d
+  {
+    char map[50][50];
+  };
+  s_grid2d grid2d;
 
   int total_power_sources;
   int my_snakebot_count;
@@ -279,50 +283,25 @@ public:
   int my_score;
   int opp_score;
 
-  Grid() : width(0), height(0), grid2d(nullptr) {}
+  Grid() : width(0), height(0) {}
   Grid(int w, int h) : width(w), height(h)
   {
-    grid2d = new char *[height];
     for (int i = 0; i < height; i++)
     {
-      grid2d[i] = new char[width];
       for (int j = 0; j < width; j++)
       {
-        grid2d[i][j] = '.';
+        grid2d.map[i][j] = '.';
       }
     }
   }
   ~Grid()
   {
-    if (grid2d != nullptr)
-    {
-      for (int i = 0; i < height; i++)
-      {
-        if (grid2d[i] != nullptr)
-          delete[] grid2d[i];
-      }
-      delete[] grid2d;
-    }
   }
 
   void recreate_grid(int w, int h)
   {
-    if (grid2d != nullptr)
-    {
-      for (int i = 0; i < height; i++)
-      {
-        if (grid2d[i] != nullptr)
-          delete[] grid2d[i];
-      }
-      delete[] grid2d;
-    }
     width = w;
     height = h;
-    grid2d = new char *[height];
-    for (int i = 0; i < height; i++)
-    {
-      grid2d[i] = new char[width];
-    }
   }
 
   void refresh_grid()
@@ -338,8 +317,8 @@ public:
     {
       for (int j = 0; j < width; j++)
       {
-        if (grid2d[i][j] != '#')
-          grid2d[i][j] = '.';
+        if (grid2d.map[i][j] != '#')
+          grid2d.map[i][j] = '.';
       }
     }
   }
@@ -350,7 +329,7 @@ public:
     {
       for (int j = 0; j < width; j++)
       {
-        cerr << grid2d[i][j];
+        cerr << grid2d.map[i][j];
       }
       cerr << endl;
     }
@@ -362,7 +341,7 @@ public:
     {
       s_cord c = snakebot.chain[i];
       if (is_bound(c.x, c.y))
-        grid2d[c.y][c.x] = snakebot.id + 'A';
+        grid2d.map[c.y][c.x] = snakebot.id + 'A';
     }
   }
 
@@ -371,24 +350,28 @@ public:
     for (int i = 0; i < snakebot.length; i++)
     {
       if (is_bound(snakebot.chain[i].x, snakebot.chain[i].y))
-        grid2d[snakebot.chain[i].y][snakebot.chain[i].x] = snakebot.id + 'a';
+        grid2d.map[snakebot.chain[i].y][snakebot.chain[i].x] = snakebot.id + 'a';
     }
   }
 
-  void score()
+  void score(int my_snakebots, int opp_snakebots)
   {
+    my_snakebot_count = my_snakebots;
+    opp_snakebot_count = opp_snakebots;
     for (int i = 0; i < height; i++)
     {
       for (int j = 0; j < width; j++)
       {
-        if (grid2d[i][j] == '@')
+        if (grid2d.map[i][j] == '@')
           total_power_sources++;
-        if (grid2d[i][j] >= 'A' && grid2d[i][j] <= 'D')
+        if (grid2d.map[i][j] >= 'A' && grid2d.map[i][j] <= 'D')
           my_lengths_total++;
-        if (grid2d[i][j] >= 'a' && grid2d[i][j] <= 'd')
+        if (grid2d.map[i][j] >= 'a' && grid2d.map[i][j] <= 'd')
           opp_lengths_total++;
       }
     }
+    my_score = my_snakebot_count * my_lengths_total - opp_snakebot_count * opp_lengths_total;
+    opp_score = opp_snakebot_count * opp_lengths_total - my_snakebot_count * my_lengths_total;
   }
 };
 
@@ -489,7 +472,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
     if (my_bots.arr[i].is_alive)
     {
       s_cord new_head = {my_bots.arr[i].chain[0].x + dx[my_bots.arr[i].sdr.dir], my_bots.arr[i].chain[0].y + dy[my_bots.arr[i].sdr.dir]};
-      if (new_head.x >= 0 && new_head.x < grid.width && new_head.y >= 0 && new_head.y < grid.height && grid.grid2d[new_head.y][new_head.x] == '@')
+      if (new_head.x >= 0 && new_head.x < grid.width && new_head.y >= 0 && new_head.y < grid.height && grid.grid2d.map[new_head.y][new_head.x] == '@')
       {
         my_bots.arr[i].length++;
       }
@@ -501,7 +484,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
     if (opp_bots.arr[i].is_alive)
     {
       s_cord new_head = {opp_bots.arr[i].chain[0].x + dx[opp_bots.arr[i].edr], opp_bots.arr[i].chain[0].y + dy[opp_bots.arr[i].edr]};
-      if (new_head.x >= 0 && new_head.x < grid.width && new_head.y >= 0 && new_head.y < grid.height && grid.grid2d[new_head.y][new_head.x] == '@')
+      if (new_head.x >= 0 && new_head.x < grid.width && new_head.y >= 0 && new_head.y < grid.height && grid.grid2d.map[new_head.y][new_head.x] == '@')
       {
         opp_bots.arr[i].length++;
       }
@@ -516,13 +499,13 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
   {
     if (my_bots.arr[i].is_alive && my_bots.arr[i].chain[0].x >= 0 && my_bots.arr[i].chain[0].x < grid.width && my_bots.arr[i].chain[0].y >= 0 && my_bots.arr[i].chain[0].y < grid.height)
     {
-      if (grid.grid2d[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] == '@')
-        grid.grid2d[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] = '.';
+      if (grid.grid2d.map[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] == '@')
+        grid.grid2d.map[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] = '.';
     }
     if (opp_bots.arr[i].is_alive && opp_bots.arr[i].chain[0].x >= 0 && opp_bots.arr[i].chain[0].x < grid.width && opp_bots.arr[i].chain[0].y >= 0 && opp_bots.arr[i].chain[0].y < grid.height)
     {
-      if (grid.grid2d[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] == '@')
-        grid.grid2d[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] = '.';
+      if (grid.grid2d.map[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] == '@')
+        grid.grid2d.map[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] = '.';
     }
   }
 
@@ -538,7 +521,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
 
     if (head.x >= 0 && head.x < grid.width && head.y >= 0 && head.y < grid.height)
     {
-      if (grid.grid2d[head.y][head.x] == '#')
+      if (grid.grid2d.map[head.y][head.x] == '#')
       {
         my_hit[i] = true;
         continue;
@@ -584,7 +567,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
 
     if (head.x >= 0 && head.x < grid.width && head.y >= 0 && head.y < grid.height)
     {
-      if (grid.grid2d[head.y][head.x] == '#')
+      if (grid.grid2d.map[head.y][head.x] == '#')
       {
         opp_hit[i] = true;
         continue;
@@ -672,7 +655,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
             s_cord under = {bots.arr[i].chain[k].x, bots.arr[i].chain[k].y + 1};
             if (under.x >= 0 && under.x < grid.width && under.y >= 0 && under.y < grid.height)
             {
-              if (grid.grid2d[under.y][under.x] == '#' || grid.grid2d[under.y][under.x] == '@')
+              if (grid.grid2d.map[under.y][under.x] == '#' || grid.grid2d.map[under.y][under.x] == '@')
               {
                 can_fall = false;
                 break;
@@ -806,7 +789,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
           s_cord under = {bot_chains[idx][k].x, bot_chains[idx][k].y + 1};
           if (under.x >= 0 && under.x < grid.width && under.y >= 0 && under.y < grid.height)
           {
-            if (grid.grid2d[under.y][under.x] == '#' || grid.grid2d[under.y][under.x] == '@')
+            if (grid.grid2d.map[under.y][under.x] == '#' || grid.grid2d.map[under.y][under.x] == '@')
             {
               can_fall = false;
               break;
@@ -875,6 +858,125 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots)
   }
 }
 
+struct Node {
+  int score = 0;
+  int visits = 0;
+  e_direction move; // الحركة لي ختارينا فهاد العقدة
+  Node *parent = NULL;
+  Node *children[3] = {NULL, NULL, NULL};
+  int children_count = 0;
+};
+
+/*
+دالة smitsimax():
+    // 1. البداية: صايب الجذور (Root Nodes)
+    لكل حنش (ديالي وديال الخصم) عايش:
+        Root_Nodes[id] = عقدة جديدة () // هادي هي نقطة الانطلاق ديالو فهاد التور
+
+    // 2. حلقة البحث (ما حد الوقت باقي ماسالاش - مثلا 40ms)
+    ما حد (باقي الوقت):
+
+        // أ. استرجاع الحالة الأصلية
+        // (خبينا الـ Grid والحناش الأصليين باش نرجعو ليهم فكل سيميولايشن)
+        sim_grid = grid
+        sim_my_bots = my_snakebots
+        sim_opp_bots = opp_snakebots
+
+        // ليستة باش نعقلو على العقد لي دزنا منهم فهاد اللوب باش نرجعو ليهم السكور فاللخر
+        traversed_nodes[MAX_SNAKEBOTS] = مصفوفة خاوية
+
+        // ب. النزول فالشجرة (العمق)
+        depth = 0
+        ما حد (depth < MAX_DEPTH و sim_grid.total_power_sources > 0):
+
+            // اختيار الحركات لكل حنش
+            لكل حنش عايش فـ (sim_my_bots و sim_opp_bots):
+                node = Root_Nodes[id]
+
+                // يلا كنا باقين الفوق، نولدو ولاد (حركات) جداد يلا ماكانوش
+                يلا (node.children_count == 0):
+                    جبد الحركات الممكنة ديال هاد الحنش (generate_possible_moves)
+                    لكل حركة ممكنة:
+                        node.children[i] = عقدة جديدة(move = ديك الحركة)
+
+                // نختارو ولد (إما عشوائيا يلا visits==0، أو UCB يلا كلشي مزار)
+                child = ختار_أحسن_ولد(node)
+
+                child.visits++
+                زيد child فـ traversed_nodes[id] // عقلنا عليه
+
+                // طبق الحركة فالحنش الوهمي ديال السيميولايشن
+                حنش.sdr.dir = child.move
+                // أو حنش.edr = child.move بالنسبة للخصم
+
+            // ج. المحاكاة
+            // دابا كلشي عندو حركة، نديرو محاكاة ديال دورة وحدة
+            SimulateTurn(sim_grid, sim_my_bots, sim_opp_bots)
+            depth++
+
+        // د. التقييم (Evaluation)
+        sim_grid.score(sim_my_bots.countAlive(), sim_opp_bots.countAlive())
+        my_reward = sim_grid.my_score
+        opp_reward = sim_grid.opp_score
+
+        // هـ. الرجوع وتحديث النقط (Backpropagation)
+        لكل حنش ديالي:
+            لكل عقدة فـ traversed_nodes[id]:
+                عقدة.score += my_reward
+
+        لكل حنش ديال الخصم:
+            لكل عقدة فـ traversed_nodes[id]:
+                عقدة.score += opp_reward
+
+    // 3. سالا الوقت -> طبع النتيجة
+    لكل حنش ديالي عايش:
+        best_move = الولد ديال Root_Nodes[id] لي عندو أكبر عدد ديال visits
+        طبع (id + best_move.move)
+*/
+
+// 1. حط هادو برا الدالة (Global Variables)
+constexpr int MAX_NODES = 100000; // طابلو كيهز 100 ألف عقدة
+Node node_pool[MAX_NODES];
+int node_count = 0;
+
+// 2. دالة خفيفة باش تجبد عقدة جديدة من الطابلو
+Node* get_new_node() {
+  if (node_count >= MAX_NODES) return nullptr; // حماية باش مانفوتوش الحد
+
+  Node* n = &node_pool[node_count++]; // هزينا بلاصة فالميموري
+
+  // ضروري نرجعو القيم للصفر حيت هاد الميموري غنكونو استعملناها فالتور لي فات
+  n->score = 0;
+  n->visits = 0;
+  n->children_count = 0;
+  n->parent = nullptr;
+  n->children[0] = nullptr; n->children[1] = nullptr; n->children[2] = nullptr;
+
+  return n;
+}
+
+// 3. الدالة ديالك دابا
+void smitsimax() {
+  // تصفير العداد فبداية كل دورة (Turn) باش نرجعو نستعملو الطابلو من الزيرو
+  node_count = 0;
+
+  Node *MyRoot_Nodes[MAX_SNAKEBOTS] = {nullptr, nullptr, nullptr, nullptr};
+  Node *OppRoot_Nodes[MAX_SNAKEBOTS] = {nullptr, nullptr, nullptr, nullptr};
+
+  for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+    if (my_snakebots.arr[i].is_alive)
+      MyRoot_Nodes[i] = get_new_node(); // عوض new Node()
+  }
+
+  for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+    if (opp_snakebots.arr[i].is_alive)
+      OppRoot_Nodes[i] = get_new_node(); // عوض new Node()
+  }
+
+  // الخطوة الجاية: لوب ديال الوقت (while time left)
+  // ...
+}
+
 int main()
 {
   int my_id;
@@ -895,7 +997,7 @@ int main()
     getline(cin, row);
     for (int j = 0; j < width; j++)
     {
-      grid.grid2d[i][j] = row[j];
+      grid.grid2d.map[i][j] = row[j];
     }
   }
   int snakebots_per_player;
@@ -932,7 +1034,7 @@ int main()
       int y;
       cin >> x >> y;
       cin.ignore();
-      grid.grid2d[y][x] = '@';
+      grid.grid2d.map[y][x] = '@';
     }
     int snakebot_count;
     cin >> snakebot_count;
@@ -971,7 +1073,7 @@ int main()
     {
       if (my_snakebots.arr[i].is_alive)
       {
-        my_snakebots.arr[i].generate_possible_moves(grid.grid2d, grid.width, grid.height);
+        my_snakebots.arr[i].generate_possible_moves(grid.grid2d.map, grid.width, grid.height);
         my_snakebots.arr[i].move();
 
         if (i < MAX_SNAKEBOTS - 1)
