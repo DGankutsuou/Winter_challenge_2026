@@ -21,6 +21,24 @@
 #pragma GCC target("rdrnd", "popcnt", "avx", "bmi2")
 
 using namespace std;
+#include <chrono>
+using namespace std::chrono;
+
+// هادا غيخبي الوقت فاش بدا التور
+time_point<steady_clock> turn_start_time;
+
+// دالة كترجع ليك شحال داز ديال الوقت بالـ Milliseconds
+long long get_elapsed_time() {
+    auto current_time = steady_clock::now();
+    return duration_cast<milliseconds>(current_time - turn_start_time).count();
+}
+
+// دالة كترجع true يلا باقي الوقت، و false يلا سالا
+bool has_time() {
+    // كنعطيوها 40 ميلي ثانية باش نخليو واحد 10ms ديال الأمان (Safety Margin)
+    // حيت CodinGame غالبا كيعطيوك 50ms فكل دورة.
+    return get_elapsed_time() < 40;
+}
 
 constexpr int MAX_CHAIN_LENGTH = 100;
 constexpr int MAX_SNAKEBOTS = 4;
@@ -974,7 +992,10 @@ void smitsimax() {
   }
 
   // الخطوة الجاية: لوب ديال الوقت (while time left)
-  // ...
+  turn_start_time = std::chrono::steady_clock::now(); // بداية التور
+  while (has_time()) {
+    
+  }
 }
 
 int main()
