@@ -302,9 +302,7 @@ public:
     }
   }
 
-  void score(int my_snakebots, int opp_snakebots) {
-    my_snakebot_count = my_snakebots;
-    opp_snakebot_count = opp_snakebots;
+  void score() {
     my_lengths_total = 0; // reset
     opp_lengths_total = 0; // reset
     total_power_sources = 0; // reset
@@ -318,8 +316,8 @@ public:
           opp_lengths_total++;
       }
     }
-    my_score = my_snakebot_count * my_lengths_total - opp_snakebot_count * opp_lengths_total;
-    opp_score = opp_snakebot_count * opp_lengths_total - my_snakebot_count * my_lengths_total;
+    my_score = my_lengths_total;
+    opp_score = opp_lengths_total;
   }
 };
 
@@ -855,7 +853,7 @@ void smitsimax() {
       depth++;
     }
 
-    sim_grid.score(sim_my_bots.countAlive(), sim_opp_bots.countAlive());
+    sim_grid.score();
     int my_reward = sim_grid.my_score;
     int opp_reward = sim_grid.opp_score;
 
