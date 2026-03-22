@@ -33,7 +33,7 @@ constexpr int MAX_NODES = 100000;
 int node_count = 0;
 
 bool has_time() {
-  return get_elapsed_time() < 40 && node_count < MAX_NODES - 100;
+  return get_elapsed_time() < 45 && node_count < MAX_NODES - 100;
 }
 
 constexpr int MAX_CHAIN_LENGTH = 100;
@@ -157,6 +157,13 @@ public:
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain[length++] = c;
+
+    if (length >= 2) {
+      if (chain[0].x > chain[1].x) sdr.dir = RIGHT;
+      else if (chain[0].x < chain[1].x) sdr.dir = LEFT;
+      else if (chain[0].y > chain[1].y) sdr.dir = DOWN;
+      else if (chain[0].y < chain[1].y) sdr.dir = UP;
+    }
   }
 
   void generate_possible_moves(char grid[50][50], int width, int height) {
@@ -166,8 +173,14 @@ public:
     for (int i = 0; i < 4; i++) {
       int new_x = chain[0].x + dx[i];
       int new_y = chain[0].y + dy[i];
-      if (new_x >= 0 && new_x < width && new_y >= 0 &&
-          (new_y < height && grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
+      // if ((new_x >= 0 && new_x < width && new_y >= 0 &&
+      //     new_y < height) && (grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
+      //     !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
+      //   possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
+      // }
+      if ((((new_x >= 0 && new_x < width && new_y >= 0 &&
+          new_y < height) && (grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@')) ||
+        (new_x < 0 || new_x >= width || new_y < 0 || new_y >= height)) &&
           !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
         possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
       }
@@ -180,11 +193,10 @@ public:
 
 struct OppSnakebot {
 public:
-  OppSnakebot() : id(-1), edr(UP) {}
-  OppSnakebot(int i, e_direction d) : id(i), edr(d) {}
+  OppSnakebot() : id(-1), sdr(UP) {}
+  OppSnakebot(int i, e_direction d) : id(i), sdr(d) {}
   int id;
   int length = 0;
-  e_direction edr;
   s_direction sdr;
   int is_alive = 0;
   s_cord chain[MAX_CHAIN_LENGTH];
@@ -208,6 +220,13 @@ public:
     c.x = stoi(body.substr(0, comma_pos));
     c.y = stoi(body.substr(comma_pos + 1));
     chain[length++] = c;
+
+    if (length >= 2) {
+      if (chain[0].x > chain[1].x) sdr.dir = RIGHT;
+      else if (chain[0].x < chain[1].x) sdr.dir = LEFT;
+      else if (chain[0].y > chain[1].y) sdr.dir = DOWN;
+      else if (chain[0].y < chain[1].y) sdr.dir = UP;
+    }
   }
 
   void generate_possible_moves(char grid[50][50], int width, int height) {
@@ -217,14 +236,20 @@ public:
     for (int i = 0; i < 4; i++) {
       int new_x = chain[0].x + dx[i];
       int new_y = chain[0].y + dy[i];
-      if (new_x >= 0 && new_x < width && new_y >= 0 &&
-          (new_y < height && grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
-          !s_direction::are_opposite(static_cast<e_direction>(i), edr)) { // FIXED: edr not sdr.dir
+      // if ((new_x >= 0 && new_x < width && new_y >= 0 &&
+      //     new_y < height) && (grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@') &&
+      //     !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
+      //   possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
+      // }
+      if ((((new_x >= 0 && new_x < width && new_y >= 0 &&
+          new_y < height) && (grid[new_y][new_x] == '.' || grid[new_y][new_x] == '@')) ||
+        (new_x < 0 || new_x >= width || new_y < 0 || new_y >= height)) &&
+          !s_direction::are_opposite(static_cast<e_direction>(i), sdr.dir)) {
         possible_moves[possible_moves_count++] = s_direction(static_cast<e_direction>(i));
       }
     }
     if (possible_moves_count == 0) {
-      possible_moves[possible_moves_count++] = edr; // FIXED: edr not sdr
+      possible_moves[possible_moves_count++] = sdr;
     }
   }
 };
@@ -278,6 +303,21 @@ public:
     }
   }
 
+  void sim_refresh_grid() {
+    my_snakebot_count = 0;
+    opp_snakebot_count = 0;
+    my_lengths_total = 0;
+    opp_lengths_total = 0;
+    my_score = 0;
+    opp_score = 0;
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        if (grid2d.map[i][j] != '#' && grid2d.map[i][j] != '@')
+          grid2d.map[i][j] = '.';
+      }
+    }
+  }
+
   void print_grid() {
     for (int i = 0; i < height; i++) {
       for (int j = 0; j < width; j++) {
@@ -310,9 +350,9 @@ public:
       for (int j = 0; j < width; j++) {
         if (grid2d.map[i][j] == '@')
           total_power_sources++;
-        if (grid2d.map[i][j] >= 'A' && grid2d.map[i][j] <= 'D')
+        if (grid2d.map[i][j] >= 'A' && grid2d.map[i][j] <= 'Z')
           my_lengths_total++;
-        if (grid2d.map[i][j] >= 'a' && grid2d.map[i][j] <= 'd')
+        if (grid2d.map[i][j] >= 'a' && grid2d.map[i][j] <= 'z')
           opp_lengths_total++;
       }
     }
@@ -398,7 +438,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
     }
 
     if (opp_bots.arr[i].is_alive) {
-      s_cord new_head = {opp_bots.arr[i].chain[0].x + dx[opp_bots.arr[i].edr], opp_bots.arr[i].chain[0].y + dy[opp_bots.arr[i].edr]};
+      s_cord new_head = {opp_bots.arr[i].chain[0].x + dx[opp_bots.arr[i].sdr.dir], opp_bots.arr[i].chain[0].y + dy[opp_bots.arr[i].sdr.dir]};
       if (new_head.x >= 0 && new_head.x < grid.width && new_head.y >= 0 && new_head.y < grid.height && grid.grid2d.map[new_head.y][new_head.x] == '@') {
         opp_bots.arr[i].length++;
       }
@@ -605,7 +645,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
 
       int group[8];
       int group_size = 0;
-      int stack[8];
+      int stack[64];
       int stack_size = 0;
 
       stack[stack_size++] = i;
@@ -694,7 +734,7 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
     }
   }
 
-  grid.refresh_grid();
+  grid.sim_refresh_grid();
   for (int i = 0; i < MAX_SNAKEBOTS; i++) {
     if (my_bots.arr[i].is_alive)
       grid.insertMySnakebot(my_bots.arr[i]);
@@ -745,7 +785,7 @@ Node *select_best_child(Node *parent) {
       return child;
     }
 
-    double exploitation = ((double)child->score / child->visits) / 100.0;
+    double exploitation = ((double)child->score / child->visits);
     double exploration = EXPLORATION_CONSTANT * sqrt(log((double)parent->visits + 1.0) / child->visits);
 
     double ucb_value = exploitation + exploration;
@@ -777,7 +817,9 @@ void smitsimax() {
 
   turn_start_time = std::chrono::steady_clock::now();
 
+  int i = 0;
   while (has_time()) {
+    i++;
     Grid sim_grid = grid;
     SMySnakebots sim_my_bots = my_snakebots;
     SOppSnakebots sim_opp_bots = opp_snakebots;
@@ -842,7 +884,7 @@ void smitsimax() {
             selected = select_best_child(curr_opp[i]);
             curr_opp[i] = selected;
             path_opp[i][depth] = selected;
-            sim_opp_bots.arr[i].edr = selected->move;
+            sim_opp_bots.arr[i].sdr.dir = selected->move;
           } else {
             curr_opp[i] = nullptr;
           }
@@ -896,8 +938,15 @@ void smitsimax() {
         cout << my_snakebots.arr[i].id << " " << direction_to_string(best_child->move);
         first_print = false;
       }
+      else {
+        if (!first_print) cout << ";";
+        cout << my_snakebots.arr[i].id << " " << direction_to_string(my_snakebots.arr[i].sdr.dir);
+        first_print = false;
+      }
     }
   }
+  cerr << node_count << " nodes explored" << endl;
+  cerr << "Simulations: " << i << endl;
 }
 
 int main() {
