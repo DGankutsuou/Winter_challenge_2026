@@ -59,6 +59,14 @@ bool is_bound(int x, int y) {
   return x >= 0 && x < grid_width && y >= 0 && y < grid_height;
 }
 
+int manhattan_distance(const s_cord &a, const s_cord &b) {
+  return abs(a.x - b.x) + abs(a.y - b.y);
+}
+
+int manhattan_distance(int x1, int y1, int x2, int y2) {
+  return abs(x1 - x2) + abs(y1 - y2);
+}
+
 string direction_to_string(e_direction dir) {
   switch (dir) {
     case UP: return "UP";
@@ -254,6 +262,62 @@ public:
   }
 };
 
+struct SMySnakebots {
+  MySnakebot arr[MAX_SNAKEBOTS];
+  int count = 0;
+
+  int countAlive() {
+    count = 0;
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      if (arr[i].is_alive)
+        count++;
+    }
+    return count;
+  }
+
+  MySnakebot *getSnakebotById(int id) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      if (arr[i].id == id)
+        return &(arr[i]);
+    }
+    return nullptr;
+  }
+
+  void killAllSnakebots() {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      arr[i].is_alive = 0;
+    }
+  }
+};
+
+struct SOppSnakebots {
+  OppSnakebot arr[MAX_SNAKEBOTS];
+  int count = 0;
+
+  int countAlive() {
+    count = 0;
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      if (arr[i].is_alive)
+        count++;
+    }
+    return count;
+  }
+
+  OppSnakebot *getSnakebotById(int id) {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      if (arr[i].id == id)
+        return &(arr[i]);
+    }
+    return nullptr;
+  }
+
+  void killAllSnakebots() {
+    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+      arr[i].is_alive = 0;
+    }
+  }
+};
+
 struct Grid {
 public:
   int turn = 0;
@@ -342,7 +406,7 @@ public:
     }
   }
 
-  void score() {
+  void count() {
     my_lengths_total = 0; // reset
     opp_lengths_total = 0; // reset
     total_power_sources = 0; // reset
@@ -359,60 +423,61 @@ public:
     my_score = my_lengths_total;
     opp_score = opp_lengths_total;
   }
-};
 
-struct SMySnakebots {
-  MySnakebot arr[MAX_SNAKEBOTS];
-  int count = 0;
-
-  int countAlive() {
-    count = 0;
-    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      if (arr[i].is_alive)
-        count++;
+  void score2(SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
+    my_lengths_total = 0; // reset
+    opp_lengths_total = 0; // reset
+    for (int i = 0; i < height; i++) {
+      my_lengths_total += my_bots.arr[i].is_alive ? my_bots.arr[i].length : 0;
+      opp_lengths_total += opp_bots.arr[i].is_alive ? opp_bots.arr[i].length : 0;
     }
-    return count;
+    my_score = my_lengths_total;
+    opp_score = opp_lengths_total;
   }
 
-  MySnakebot *getSnakebotById(int id) {
-    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      if (arr[i].id == id)
-        return &(arr[i]);
+  void score(SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
+    my_score = 0;
+    opp_score = 0;
+
+    // 1. نقلبو على بلايص الماكلة دغيا
+    s_cord foods[100];
+    int food_count = 0;
+    for (int i = 0; i < height; i++) {
+      for (int j = 0; j < width; j++) {
+        if (grid2d.map[i][j] == '@') {
+          foods[food_count++] = {j, i};
+        }
+      }
     }
-    return nullptr;
-  }
 
-  void killAllSnakebots() {
+    // 2. حساب السكور لحناشك
     for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      arr[i].is_alive = 0;
-    }
-  }
-};
+      if (my_bots.arr[i].is_alive) {
+        my_score += my_bots.arr[i].length * 1000; // مكافأة الطول
 
-struct SOppSnakebots {
-  OppSnakebot arr[MAX_SNAKEBOTS];
-  int count = 0;
+        // مكافأة القرب من الماكلة (باش يتسابقو عليها)
+        if (food_count > 0) {
+          int min_dist = 9999;
+          for (int f = 0; f < food_count; f++) {
+            int dist = abs(my_bots.arr[i].chain[0].x - foods[f].x) + abs(my_bots.arr[i].chain[0].y - foods[f].y);
+            if (dist < min_dist) min_dist = dist;
+          }
+          my_score -= min_dist * 10; // كنقصو المسافة باش كلما صغرات السكور يكبر
+        }
+      }
 
-  int countAlive() {
-    count = 0;
-    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      if (arr[i].is_alive)
-        count++;
-    }
-    return count;
-  }
-
-  OppSnakebot *getSnakebotById(int id) {
-    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      if (arr[i].id == id)
-        return &(arr[i]);
-    }
-    return nullptr;
-  }
-
-  void killAllSnakebots() {
-    for (int i = 0; i < MAX_SNAKEBOTS; i++) {
-      arr[i].is_alive = 0;
+      // 3. نفس الحساب لخصمك
+      if (opp_bots.arr[i].is_alive) {
+        opp_score += opp_bots.arr[i].length * 1000;
+        if (food_count > 0) {
+          int min_dist = 9999;
+          for (int f = 0; f < food_count; f++) {
+            int dist = abs(opp_bots.arr[i].chain[0].x - foods[f].x) + abs(opp_bots.arr[i].chain[0].y - foods[f].y);
+            if (dist < min_dist) min_dist = dist;
+          }
+          opp_score -= min_dist * 10;
+        }
+      }
     }
   }
 };
@@ -449,14 +514,19 @@ void SimulateTurn(Grid &grid, SMySnakebots &my_bots, SOppSnakebots &opp_bots) {
   }
 
   for (int i = 0; i < MAX_SNAKEBOTS; i++) {
+    bool eaten = false;
     if (my_bots.arr[i].is_alive && my_bots.arr[i].chain[0].x >= 0 && my_bots.arr[i].chain[0].x < grid.width && my_bots.arr[i].chain[0].y >= 0 && my_bots.arr[i].chain[0].y < grid.height) {
       if (grid.grid2d.map[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] == '@')
         grid.grid2d.map[my_bots.arr[i].chain[0].y][my_bots.arr[i].chain[0].x] = '.';
+        eaten = true;
     }
     if (opp_bots.arr[i].is_alive && opp_bots.arr[i].chain[0].x >= 0 && opp_bots.arr[i].chain[0].x < grid.width && opp_bots.arr[i].chain[0].y >= 0 && opp_bots.arr[i].chain[0].y < grid.height) {
       if (grid.grid2d.map[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] == '@')
         grid.grid2d.map[opp_bots.arr[i].chain[0].y][opp_bots.arr[i].chain[0].x] = '.';
+        eaten = true;
     }
+    if (eaten)
+      grid.total_power_sources--;
   }
 
   bool my_hit[MAX_SNAKEBOTS] = {false};
@@ -772,7 +842,7 @@ Node *get_new_node() {
   return n;
 }
 
-constexpr double EXPLORATION_CONSTANT = 1.5;
+constexpr double EXPLORATION_CONSTANT = 500.5;
 
 Node *select_best_child(Node *parent) {
   Node *best_child = nullptr;
@@ -895,7 +965,7 @@ void smitsimax() {
       depth++;
     }
 
-    sim_grid.score();
+    sim_grid.score(sim_my_bots, sim_opp_bots);
     int my_reward = sim_grid.my_score;
     int opp_reward = sim_grid.opp_score;
 
